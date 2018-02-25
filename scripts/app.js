@@ -17,7 +17,36 @@ function AppModel(attrs) {
     valid: [],
     invalid: []
   }
+
+  /** エラーが起こったプロパティ */
+  this.errors = [];
 }
+
+
+/** 値のupdateとvalidationの実行 */
+AppModel.prototype.set = function(val) {
+  if (this.val === val) return;
+  /** 値をupdate */
+  this.val = val;
+  this.validate();
+}
+
+/** validation実行 */
+AppModel.prototype.validate = function() {
+  for (var key in this.attrs) {
+    var val = this.attrs[key];
+
+    /** this[key](val) で以下のvalidation関数を実行している */
+    if (val && !this[key](val)) {
+      this.errors.push(key);
+    }
+  }
+  /** １つもエラーがない: validイベント通知 */
+  /** １つ異常エラーがある: invalidイベント通知 */
+  this.trigger(!this.errors.length ? "valid" : "invalid");
+}
+
+
 
 /** イベントを登録 */
 AppModel.prototype.on = function(event, func) {
@@ -31,40 +60,15 @@ AppModel.prototype.trigger = function(event) {
   });
 }
 
-/** 値のupdateとvalidationの実行 */
-AppModel.prototype.set = function(val) {
-  if (this.val === val) return;
-  /** 値をupdate */
-  this.val = val;
-  this.validate();
-}
-
-/** validation実行 */
-AppModel.prototype.validate = function() {
-  this.errors = [];
-
-  for (var key in this.attrs) {
-    var val = this.attrs[key];
-
-    /** this[key](val) で以下のvalidation関数を実行している */
-    if (val && !this[key](val)) {
-      this.errors.push(key);
-    }
-  }
-
-  /** １つもエラーがない: validイベント通知 */
-  /** １つ異常エラーがある: invalidイベント通知 */
-  this.trigger(!this.errors.length ? "valid" : "invalid");
-}
-
 /*
  * 各種validation関数
  */
 AppModel.prototype.maxlength = function(num) {
-  return num => this.val.length;
+  return num >= this.val.length;
 };
 
 AppModel.prototype.minlength = function(num) {
+  console.log(num <= this.val.length);
   return num <= this.val.length;
 };
 
@@ -76,7 +80,9 @@ AppModel.prototype.required = function() {
 
 /** viewの操作・viewからの値の取得が責務 */
 function AppView(el) {
+  /** viewの操作に必要なdomを取得 */
   this.$el = $(el);
+  this.$list = this.$el.next().children();
 
   var self = this;
   var obj = this.$el.data();
@@ -88,14 +94,21 @@ function AppView(el) {
 
   /** modelに動かさせたいeventを登録 */
   this.model.on('valid', function() {
-    console.log('validだよ');
+    self.$el.removeClass("error");
+    /** 隠す */
+    self.$list.hide();
   });
 
   /** modelに動かさせたいeventを登録 */
   this.model.on('invalid', function() {
-    console.log('invalidだよ');
-  });
+    self.$el.addClass("error");
+    self.$list.hide();
 
+    $.each(self.model.errors, function(index, val) {
+      /** errorが起こったやつだけ見せる */
+      self.$list.filter("[data-error=\"" + val + "\"]").show();
+    });
+  });
 
   /**
    * フォームの値が変わった時の動作
@@ -107,6 +120,7 @@ function AppView(el) {
   });
 
 }
+
 
 
 $("input").each(function() {
