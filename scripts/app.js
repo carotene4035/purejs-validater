@@ -3,6 +3,15 @@
 function AppModel(attrs) {
   /** フォームが持っているvalue */
   this.value = '';
+
+  /** バリデーションの機能 */
+  this.attrs = {
+    required: attrs.required || false,
+    maxlength: attrs.maxlength || 8,
+    minlength: attrs.minlength || 4
+  };
+
+
 }
 
 AppModel.prototype.set = function(val) {
@@ -12,15 +21,17 @@ AppModel.prototype.set = function(val) {
 }
 
 
-
 /** viewの操作・viewからの値の取得が責務 */
 function AppView(el) {
   this.$el = $(el);
-  console.log(this.$el);
-
-  this.model = new AppModel();
 
   var self = this;
+  var obj = this.$el.data();
+
+  if (this.$el.prop('required')) {
+    obj['required'] = true;
+  }
+  this.model = new AppModel(obj);
 
   /**
    * フォームの値が変わった時の動作
@@ -38,5 +49,3 @@ $("input").each(function() {
   /** dom要素を渡している */
   new AppView(this);
 });
-
-// htmlの記述を変えれば、いろんなvalidationができるのではないか
