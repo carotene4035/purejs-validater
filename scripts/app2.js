@@ -27,6 +27,7 @@ AppModel.prototype.validate = function() {
   console.log(this);
   for (var key in this.attrs) {
     val = this.attrs[key];
+    console.log(this);
     if (val && !this[key](val)) this.errors.push(key);
   }
 
