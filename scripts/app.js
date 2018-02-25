@@ -11,17 +11,27 @@ function AppModel(attrs) {
     maxlength: attrs.maxlength || 8,
     minlength: attrs.minlength || 4
   };
-//  this.listeners = {
-//    valid: [],
-//    invalid: []
-//  }
+
+  // こう書かないと、viewのオブジェクトを持っていないといけないことになる？！
+  this.listeners = {
+    valid: [],
+    invalid: []
+  }
 }
 
 /** イベントを登録 */
-AppModel.prototype.on = function(func) {
-
+AppModel.prototype.on = function(event, func) {
+  this.listeners[event].push(func);
 }
 
+/** イベントを実行 */
+AppModel.prototype.trigger = function(event) {
+  $.each(this.listeners[event], function() {
+    this();
+  });
+}
+
+/** 値のupdateとvalidationの実行 */
 AppModel.prototype.set = function(val) {
   if (this.val === val) return;
   /** 値をupdate */
@@ -39,12 +49,12 @@ AppModel.prototype.validate = function() {
     /** this[key](val) で以下のvalidation関数を実行している */
     if (val && !this[key](val)) {
       this.errors.push(key);
-      console.log(key + 'に失敗');
     }
-
-    /** イベント通知 */
-    this.trigger(!this.errors.length ? "valid" : "invalid");
   }
+
+  /** １つもエラーがない: validイベント通知 */
+  /** １つ異常エラーがある: invalidイベント通知 */
+  this.trigger(!this.errors.length ? "valid" : "invalid");
 }
 
 /*
@@ -55,7 +65,6 @@ AppModel.prototype.maxlength = function(num) {
 };
 
 AppModel.prototype.minlength = function(num) {
-  console.log(this);
   return num <= this.val.length;
 };
 
@@ -77,6 +86,17 @@ function AppView(el) {
   }
   this.model = new AppModel(obj);
 
+  /** modelに動かさせたいeventを登録 */
+  this.model.on('valid', function() {
+    console.log('validだよ');
+  });
+
+  /** modelに動かさせたいeventを登録 */
+  this.model.on('invalid', function() {
+    console.log('invalidだよ');
+  });
+
+
   /**
    * フォームの値が変わった時の動作
    * viewはviewの変更をmodelに伝える
@@ -85,6 +105,7 @@ function AppView(el) {
     var $target = $(e.currentTarget);
     self.model.set($target.val());
   });
+
 }
 
 
